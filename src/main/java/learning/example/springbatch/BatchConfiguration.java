@@ -15,7 +15,6 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
 import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -36,7 +35,7 @@ public class BatchConfiguration {
     public EntityManagerFactory entityManagerFactory;
     
 	@Bean
-	public HibernateCursorItemReader hibernateReader() {
+	public HibernateCursorItemReader<Person> hibernateReader() {
 		SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
 		return new HibernateCursorItemReaderBuilder<Person>().name("personReader")
 				.sessionFactory(sessionFactory).queryString("from Person").build();
