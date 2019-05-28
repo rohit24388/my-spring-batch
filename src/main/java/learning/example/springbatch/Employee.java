@@ -6,44 +6,55 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-public class Person {
+public class Employee {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private int personId;
+	private int employeeId;
 	private String firstName;
 	private String lastName;
+	private String department;
 	
-	public Person() {		
+	public Employee() {
 	}
-	
-	public Person(int personId, String firstName, String lastName) {
-		this.personId = personId;
+
+	public Employee(int employeeId, String firstName, String lastName, String department) {
+		this.employeeId = employeeId;
 		this.firstName = firstName;
 		this.lastName = lastName;
+		this.department = department;
 	}
-	
-	public int getPersonId() {
-		return personId;
+
+	public int getEmployeeId() {
+		return employeeId;
 	}
-	public void setPersonId(int personId) {
-		this.personId = personId;
+
+	public void setEmployeeId(int employeeId) {
+		this.employeeId = employeeId;
 	}
+
 	public String getFirstName() {
 		return firstName;
 	}
+
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 	}
+
 	public String getLastName() {
 		return lastName;
 	}
+
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
 	}
-	
-	@Override
-	public String toString() {
-		return "first_name: " + firstName + ", last_name: " + lastName;
+
+	public String getDepartment() {
+		return department;
 	}
+
+	public void setDepartment(String department) {
+		this.department = department;
+	}
+	
 }

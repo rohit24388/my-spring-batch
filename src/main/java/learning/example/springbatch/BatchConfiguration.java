@@ -13,9 +13,12 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,16 +30,23 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 public class BatchConfiguration {
 
 	@Autowired
-	public JobBuilderFactory jobBuilderFactory;
+	private JobBuilderFactory jobBuilderFactory;
 
 	@Autowired
-	public StepBuilderFactory stepBuilderFactory;
+	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	public DataSource dataSource;
+	private DataSource dataSource;
 
+	private SessionFactory sessionFactory;
+	
 	@Autowired
-	public EntityManagerFactory entityManagerFactory;
+	public BatchConfiguration(EntityManagerFactory entityManagerFactory) {
+		if (entityManagerFactory.unwrap(SessionFactory.class) == null) {
+			throw new NullPointerException("The factory is not a hibernate factory");
+		}
+		this.sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+	}
 	
 	@Bean(destroyMethod="")
 	public JdbcCursorItemReader<Person> jdbcReader() {
@@ -46,14 +56,11 @@ public class BatchConfiguration {
 
 	@Bean
 	public HibernateCursorItemReader<Person> hibernateReader() {
-		if (entityManagerFactory.unwrap(SessionFactory.class) == null) {
-			throw new NullPointerException("factory is not a hibernate factory");
-		}
-		SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
 		return new HibernateCursorItemReaderBuilder<Person>().name("hibernateReader").sessionFactory(sessionFactory)
 				.queryString("from Person").build();
 	}
 
+	@Bean
 	public ItemWriter<Person> customWriter() {
 		ItemWriter<Person> writer = (List<? extends Person> persons) -> {
 			for (Person person : persons) {
@@ -62,6 +69,19 @@ public class BatchConfiguration {
 		};
 		return writer;
 	}
+	
+	@Bean
+	public JdbcBatchItemWriter<Employee> jdbcWriter(DataSource dataSource) {
+		return new JdbcBatchItemWriterBuilder<Employee>()
+				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+				.sql("INSERT INTO employee (employee_id, first_name, last_name) VALUES (:personId, :firstName, :lastName)")
+				.dataSource(dataSource).build();
+	}
+	
+//	@Bean
+//	public HibernateItemWriter<Employee> hibernateWriter() {
+//		return new HibernateItemWriterBuilder<Employee>().sessionFactory(sessionFactory).build();
+//	}
 
 	@Bean
 	public Job displayJob(Step step1) {
@@ -70,7 +90,7 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").<Person, Person>chunk(3).reader(jdbcReader()).writer(customWriter())
+		return stepBuilderFactory.get("step1").<Person, Employee>chunk(3).reader(hibernateReader()).writer(jdbcWriter(dataSource))
 				.build();
 	}
 
