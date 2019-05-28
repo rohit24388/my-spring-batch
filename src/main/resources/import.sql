@@ -1,3 +1,3 @@
-insert into person values (1, 'Rohit', 'Raman');
-insert into person values (2, 'Rachna', 'Verma');
-insert into person values (3, 'Rahul', 'Roshan');
+insert into person values (1, '1st', 'Person');
+insert into person values (2, '2nd', 'Person');
+insert into person values (3, '3rd', 'Person');
