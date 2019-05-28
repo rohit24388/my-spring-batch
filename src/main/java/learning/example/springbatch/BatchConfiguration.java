@@ -14,10 +14,13 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 
 @Configuration
 @EnableBatchProcessing
@@ -34,6 +37,12 @@ public class BatchConfiguration {
 
 	@Autowired
 	public EntityManagerFactory entityManagerFactory;
+	
+	@Bean(destroyMethod="")
+	public JdbcCursorItemReader<Person> jdbcReader() {
+		return new JdbcCursorItemReaderBuilder<Person>().dataSource(dataSource).name("jdbcReader")
+				.sql("select * from person").rowMapper(new BeanPropertyRowMapper<>(Person.class)).build();
+	}
 
 	@Bean
 	public HibernateCursorItemReader<Person> hibernateReader() {
@@ -61,7 +70,7 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").<Person, Person>chunk(3).reader(hibernateReader()).writer(customWriter())
+		return stepBuilderFactory.get("step1").<Person, Person>chunk(3).reader(jdbcReader()).writer(customWriter())
 				.build();
 	}
 
