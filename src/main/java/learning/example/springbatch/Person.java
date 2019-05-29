@@ -13,14 +13,16 @@ public class Person {
 	private int personId;
 	private String firstName;
 	private String lastName;
+	private String degreeMajor;
 	
 	public Person() {		
 	}
 	
-	public Person(int personId, String firstName, String lastName) {
+	public Person(int personId, String firstName, String lastName, DegreeMajor degreeMajor) {
 		this.personId = personId;
 		this.firstName = firstName;
 		this.lastName = lastName;
+		this.degreeMajor = degreeMajor.name();
 	}
 	
 	public int getPersonId() {
@@ -40,10 +42,16 @@ public class Person {
 	}
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}	
+	public String getDegreeMajor() {
+		return degreeMajor;
 	}
-	
+	public void setDegreeMajor(DegreeMajor degreeMajor) {
+		this.degreeMajor = degreeMajor.name();
+	}
+
 	@Override
 	public String toString() {
-		return "first_name: " + firstName + ", last_name: " + lastName;
+		return "first_name: " + firstName + ", last_name: " + lastName + ", degree_major: " + degreeMajor;
 	}
 }
