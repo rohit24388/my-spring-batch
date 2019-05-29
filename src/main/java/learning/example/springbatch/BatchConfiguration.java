@@ -6,6 +6,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
+import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -118,6 +119,11 @@ public class BatchConfiguration {
 	public JpaItemWriter<Employee> jpaWriter() {
 		return new JpaItemWriterBuilder<Employee>().entityManagerFactory(entityManagerFactory).build();
 	}
+	
+	@Bean
+	public ChunkListener chunkListener() {
+		return new CustomChunkListener();
+	}
 
 	@Bean
 	public Job displayJob(Step step1) {
@@ -126,9 +132,17 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").transactionManager(transactionManager).<Person, Employee>chunk(10)
-				.reader(hibernateReader()).processor(processor()).writer(jpaWriter()).faultTolerant().skipLimit(2)
-				.skip(DegreeMajorNotRecognizedException.class).build();
+		return stepBuilderFactory.get("step1")
+				.transactionManager(transactionManager)
+				.<Person, Employee>chunk(10)
+				.reader(hibernateReader())
+				.processor(processor())
+				.writer(jpaWriter())
+				.faultTolerant()
+				.skipLimit(2)
+				.skip(DegreeMajorNotRecognizedException.class)
+				.listener(chunkListener())
+				.build();
 	}
 
 }

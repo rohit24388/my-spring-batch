@@ -29,7 +29,7 @@ public class PersonToEmployeeConverter implements ItemProcessor<Person, Employee
 			}
 		} catch (NullPointerException npe) { // This will be thrown when when the Degree Major is something other than
 												// DegreeMajor enum
-			throw new DegreeMajorNotRecognizedException(person.getDegreeMajor() + " is not a recognized degree major!");
+			throw new DegreeMajorNotRecognizedException("'" + person.getDegreeMajor() + "' is not a recognized degree major!");
 		}
 		return new Employee(person.getFirstName(), person.getLastName(), department);
 	}
