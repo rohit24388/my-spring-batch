@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableBatchProcessing
@@ -44,6 +45,9 @@ public class BatchConfiguration {
 
 	@Autowired
 	private DataSource dataSource;
+	
+	@Autowired
+	private PlatformTransactionManager transactionManager; 
 	
 	@Autowired
 	private EntityManagerFactory entityManagerFactory;
@@ -122,8 +126,9 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").<Person, Employee>chunk(3).reader(hibernateReader())
-				.processor(processor()).writer(jpaWriter()).build();
+		return stepBuilderFactory.get("step1").transactionManager(transactionManager).<Person, Employee>chunk(10)
+				.reader(hibernateReader()).processor(processor()).writer(jpaWriter()).faultTolerant().skipLimit(2)
+				.skip(DegreeMajorNotRecognizedException.class).build();
 	}
 
 }
