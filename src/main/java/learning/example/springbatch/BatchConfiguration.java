@@ -17,12 +17,18 @@ import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourc
 import org.springframework.batch.item.database.HibernateCursorItemReader;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
+import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 
 @Configuration
@@ -37,6 +43,9 @@ public class BatchConfiguration {
 
 	@Autowired
 	private DataSource dataSource;
+	
+	@Autowired
+	private EntityManagerFactory entityManagerFactory;
 
 	private SessionFactory sessionFactory;
 	
@@ -46,6 +55,18 @@ public class BatchConfiguration {
 			throw new NullPointerException("The factory is not a hibernate factory");
 		}
 		this.sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+	}
+	
+	@Bean
+	public FlatFileItemReader<Employee> flatFileReader() {
+		return new FlatFileItemReaderBuilder<Employee>().name("flatFileReader")
+				.resource(new ClassPathResource("sample-data.csv")).delimited()
+				.names(new String[] { "employeeId", "firstName", "lastName", "department" })
+				.fieldSetMapper(new BeanWrapperFieldSetMapper<Employee>() {
+					{
+						setTargetType(Employee.class);
+					}
+				}).build();
 	}
 	
 	@Bean(destroyMethod="")
@@ -82,6 +103,11 @@ public class BatchConfiguration {
 //	public HibernateItemWriter<Employee> hibernateWriter() {
 //		return new HibernateItemWriterBuilder<Employee>().sessionFactory(sessionFactory).build();
 //	}
+	
+	@Bean
+	public JpaItemWriter<Employee> jpaWriter() {
+		return new JpaItemWriterBuilder<Employee>().entityManagerFactory(entityManagerFactory).build();
+	}
 
 	@Bean
 	public Job displayJob(Step step1) {
@@ -90,7 +116,7 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").<Person, Employee>chunk(3).reader(hibernateReader()).writer(jdbcWriter(dataSource))
+		return stepBuilderFactory.get("step1").<Employee, Employee>chunk(3).reader(flatFileReader()).writer(jpaWriter())
 				.build();
 	}
 
