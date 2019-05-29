@@ -12,6 +12,7 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
@@ -80,6 +81,11 @@ public class BatchConfiguration {
 		return new HibernateCursorItemReaderBuilder<Person>().name("hibernateReader").sessionFactory(sessionFactory)
 				.queryString("from Person").build();
 	}
+	
+	@Bean
+	public ItemProcessor<Person, Employee> processor() {
+		return new PersonToEmployeeConverter();
+	}
 
 	@Bean
 	public ItemWriter<Person> customWriter() {
@@ -95,7 +101,7 @@ public class BatchConfiguration {
 	public JdbcBatchItemWriter<Employee> jdbcWriter(DataSource dataSource) {
 		return new JdbcBatchItemWriterBuilder<Employee>()
 				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-				.sql("INSERT INTO employee (employee_id, first_name, last_name) VALUES (:personId, :firstName, :lastName)")
+				.sql("INSERT INTO employee (employee_id, first_name, last_name, department) VALUES (:employeeId, :firstName, :lastName, :department)")
 				.dataSource(dataSource).build();
 	}
 	
@@ -116,8 +122,8 @@ public class BatchConfiguration {
 
 	@Bean
 	public Step step1() {
-		return stepBuilderFactory.get("step1").<Employee, Employee>chunk(3).reader(flatFileReader()).writer(jpaWriter())
-				.build();
+		return stepBuilderFactory.get("step1").<Person, Employee>chunk(3).reader(hibernateReader())
+				.processor(processor()).writer(jpaWriter()).build();
 	}
 
 }
