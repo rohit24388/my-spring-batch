@@ -1,5 +1,6 @@
 package learning.example.springbatch;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -11,6 +12,8 @@ public class Employee {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private int employeeId;
+	@Column(unique=true)
+	private int personId;
 	private String firstName;
 	private String lastName;
 	private String department;
@@ -18,7 +21,8 @@ public class Employee {
 	public Employee() {
 	}
 
-	public Employee(String firstName, String lastName, String department) {
+	public Employee(int personId, String firstName, String lastName, String department) {
+		this.personId = personId;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.department = department;
@@ -30,6 +34,14 @@ public class Employee {
 
 	public void setEmployeeId(int employeeId) {
 		this.employeeId = employeeId;
+	}
+
+	public int getPersonId() {
+		return personId;
+	}
+
+	public void setPersonId(int personId) {
+		this.personId = personId;
 	}
 
 	public String getFirstName() {

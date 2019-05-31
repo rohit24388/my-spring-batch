@@ -52,6 +52,6 @@ public class Person {
 
 	@Override
 	public String toString() {
-		return "first_name: " + firstName + ", last_name: " + lastName + ", degree_major: " + degreeMajor;
+		return "person_id: " + personId + ", first_name: " + firstName + ", last_name: " + lastName + ", degree_major: " + degreeMajor;
 	}
 }
