@@ -138,7 +138,7 @@ public class BatchConfiguration {
 				.reader(hibernateReader())
 				.processor(processor())
 				.writer(jpaWriter())
-				.faultTolerant()
+				//.faultTolerant()
 				//.skipLimit(2)
 				//.skip(DegreeMajorNotRecognizedException.class)
 				.listener(chunkListener())
