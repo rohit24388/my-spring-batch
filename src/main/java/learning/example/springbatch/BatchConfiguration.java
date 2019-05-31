@@ -3,6 +3,7 @@ package learning.example.springbatch;
 import java.util.List;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
@@ -139,8 +140,7 @@ public class BatchConfiguration {
 				.processor(processor())
 				.writer(jpaWriter())
 				.faultTolerant()
-				//.skipLimit(2)
-				//.skip(DegreeMajorNotRecognizedException.class)
+				.skip(PersistenceException.class)
 				.listener(chunkListener())
 				.build();
 	}
