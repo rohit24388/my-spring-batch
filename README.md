@@ -10,7 +10,7 @@ You will need to run the application twice.
 2. Now manually delete every record from EMPLOYEE table except the one with person_id=5. Also set spring.jpa.hibernate.ddl-auto=none in application.properties so that from the next run onward, tables are not dropped and created.
 3. Run the application a second time. You will see that the job fails. A closer look at the log will tell you that the first chunk of 3 records (person_id = {1, 2, 3})were read and written just fine. It was the second chunk of 3 records (person_id = (4, 5, 6}) that failed. It is so because the second chunk has a record with person_id=5, something which EMPLOYEE table already had, and hence SQLIntegrityConstraintViolationException.
    To know which exact database record errored out, I have logged out Hibernate SQL statements which clearly shows that the last SQL executed was the one with person_id=5
-   The exception will cause the database transaction to fail. Since faultTolerant() has been commented out for the Step 'step1', a retry won't happen and the Batch job will end. This results in the 7th record of PERSON table not being read at all. You can verify these stats from BATCH_STEP_EXECUTION table:
+   The exception will cause the database transaction to fail. Since faultTolerant() is enabled for Step 'step1', retries till the retry-limit (default is 2 probably) will happen. Since ConstraintViolationException is something that can't go away until the data is corrected, the Batch job will eventually end in failure. This will result in the 7th record of PERSON table not being read at all. You can verify these stats from BATCH_STEP_EXECUTION table:
    
    READ_COUNT = 6
    WRITE_COUNT = 3
