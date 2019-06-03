@@ -2,7 +2,7 @@ package learning.example.springbatch;
 
 import javax.persistence.PersistenceException;
 
-//import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.step.skip.SkipLimitExceededException;
@@ -17,7 +17,8 @@ public class ConstraintViolationExceptionSkipper implements SkipPolicy {
 	@Override
 	public boolean shouldSkip(Throwable t, int skipCount) throws SkipLimitExceededException {
 		log.info("inside ConstraintViolationExceptionSkipper.shouldSkip()");
-		if(t instanceof PersistenceException && skipCount <= 5) {
+		if(t instanceof PersistenceException && 
+				t.getCause() instanceof ConstraintViolationException) {
 			return true;
 		}
 		return false;

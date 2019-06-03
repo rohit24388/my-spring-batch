@@ -57,6 +57,9 @@ public class BatchConfiguration {
 	private SessionFactory sessionFactory;
 	
 	@Autowired
+	ConstraintViolationExceptionSkipper constraintViolationExceptionSkipper;
+	
+	@Autowired
 	public BatchConfiguration(EntityManagerFactory entityManagerFactory) {
 		if (entityManagerFactory.unwrap(SessionFactory.class) == null) {
 			throw new NullPointerException("The factory is not a hibernate factory");
@@ -140,8 +143,10 @@ public class BatchConfiguration {
 				.processor(processor())
 				.writer(jpaWriter())
 				.faultTolerant()
-				.skip(PersistenceException.class)
-				.listener(chunkListener())
+//				.skip(PersistenceException.class)
+				.skipPolicy(constraintViolationExceptionSkipper)
+				.skipLimit(1)
+//				.listener(chunkListener())
 				.build();
 	}
 
