@@ -3,7 +3,6 @@ package learning.example.springbatch;
 import java.util.List;
 
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
@@ -26,12 +25,16 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.batch.item.file.transform.PassThroughLineAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -79,10 +82,11 @@ public class BatchConfiguration {
 				}).build();
 	}
 	
-	@Bean(destroyMethod="")
-	public JdbcCursorItemReader<Person> jdbcReader() {
-		return new JdbcCursorItemReaderBuilder<Person>().dataSource(dataSource).name("jdbcReader")
-				.sql("select * from person").rowMapper(new BeanPropertyRowMapper<>(Person.class)).build();
+	@Bean(destroyMethod = "")
+	public JdbcCursorItemReader<EmployeeDetails> jdbcReader() {
+		return new JdbcCursorItemReaderBuilder<EmployeeDetails>().dataSource(dataSource).name("jdbcReader")
+				.sql("select e.*, p.degree_major from employee e join person p on e.person_id = p.person_id")
+				.rowMapper(new BeanPropertyRowMapper<>(EmployeeDetails.class)).build();
 	}
 
 	@Bean
@@ -125,13 +129,33 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
+	public FlatFileItemWriter<EmployeeDetails> flatFileWriter() {
+		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("flatFileWriter")
+				.resource(new FileSystemResource("target/test-outputs/employeeDetails.txt"))
+				.lineAggregator(new PassThroughLineAggregator<>()).build();
+	}
+
+	@Bean
 	public ChunkListener chunkListener() {
 		return new CustomChunkListener();
 	}
 
+//	@Bean
+//	public Job dbWriteJob(Step step1) {
+//		return jobBuilderFactory.get("dbWriteJob").incrementer(new RunIdIncrementer()).flow(step1).end().build();
+//	}
+//	
+//	@Bean
+//	public Job mergeJob(Step step2) {
+//		return jobBuilderFactory.get("mergeJob").incrementer(new RunIdIncrementer()).flow(step2).end().build();
+//	}
+	
 	@Bean
-	public Job displayJob(Step step1) {
-		return jobBuilderFactory.get("displayJob").incrementer(new RunIdIncrementer()).flow(step1).end().build();
+	public Job dbWriteAndMergeJob(Step step1, Step step2) {
+		return jobBuilderFactory.get("dbWriteAndMergeJob").incrementer(new RunIdIncrementer())
+				.start(step1).on("*").to(step2)
+				.end()
+				.build();
 	}
 
 	@Bean
@@ -142,10 +166,24 @@ public class BatchConfiguration {
 				.reader(hibernateReader())
 				.processor(processor())
 				.writer(jpaWriter())
-				.faultTolerant()
-//				.skip(PersistenceException.class)
-				.skipPolicy(constraintViolationExceptionSkipper)
-				.skipLimit(1)
+//				.faultTolerant()
+//				.skipPolicy(constraintViolationExceptionSkipper)
+//				.skipLimit(1)
+				.listener(chunkListener())
+				.build();
+	}
+	
+	@Bean
+	public Step step2() {
+		return stepBuilderFactory.get("step2")
+				.transactionManager(transactionManager)
+				.<EmployeeDetails, EmployeeDetails>chunk(3)
+				.reader(jdbcReader())
+//				.processor(processor())
+				.writer(flatFileWriter())
+//				.faultTolerant()
+//				.skipPolicy(constraintViolationExceptionSkipper)
+//				.skipLimit(1)
 //				.listener(chunkListener())
 				.build();
 	}
