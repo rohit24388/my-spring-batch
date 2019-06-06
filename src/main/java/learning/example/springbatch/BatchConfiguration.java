@@ -6,6 +6,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -153,6 +154,7 @@ public class BatchConfiguration {
 //		return new HibernateItemWriterBuilder<Employee>().sessionFactory(sessionFactory).build();
 //	}
 	
+	
 	@Bean
 	public JpaItemWriter<Employee> jpaWriter() {
 		return new JpaItemWriterBuilder<Employee>().entityManagerFactory(entityManagerFactory).build();
@@ -181,7 +183,7 @@ public class BatchConfiguration {
 				.incrementer(new RunIdIncrementer())
 				.flow(step1)
 				.end()
-				.listener(jobListener)
+//				.listener(jobListener)
 				.build();
 	}
 //	
@@ -199,16 +201,16 @@ public class BatchConfiguration {
 //	}
 
 	@Bean
-	public Step step1() {
+	public Step step1(ItemWriter<Employee> customJpaWriter) {
 		return stepBuilderFactory.get("step1")
 				.transactionManager(transactionManager)
 				.<Person, Employee>chunk(3)
 				.reader(hibernateReader())
 				.processor(processor())
-				.writer(jpaWriter())
-//				.faultTolerant()
-//				.skipPolicy(constraintViolationExceptionSkipper)
-//				.skipLimit(1)
+				.writer(customJpaWriter)
+				.faultTolerant()
+				.skip(ConstraintViolationException.class)
+				.skipLimit(2)
 				.listener(chunkListener())
 				.build();
 	}

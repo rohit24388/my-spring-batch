@@ -1,3 +1,3 @@
 # spring-batch
 
-This implementation demonstrates how to manually run a batch job once and then restart it a single time if i fails.
+This implementation demonstrates how to use a custom ItemWriter to flush records to database one by one and catch all bad records and re-throw the corresponding exceptions to be intercepted by the StepExecutionListener (CustomChunkListener in this implementation)
