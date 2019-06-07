@@ -166,11 +166,6 @@ public class BatchConfiguration {
 				.resource(new FileSystemResource("target/test-outputs/employeeDetails.txt"))
 				.lineAggregator(new PassThroughLineAggregator<>()).build();
 	}
-
-	@Bean
-	public ChunkListener chunkListener() {
-		return new CustomChunkListener();
-	}
 	
 //	@Bean
 //	public JobExecutionListener jobListener() {
@@ -201,7 +196,7 @@ public class BatchConfiguration {
 //	}
 
 	@Bean
-	public Step step1(ItemWriter<Employee> customJpaWriter) {
+	public Step step1(ItemWriter<Employee> customJpaWriter, ChunkListener chunkListener) {
 		return stepBuilderFactory.get("step1")
 				.transactionManager(transactionManager)
 				.<Person, Employee>chunk(3)
@@ -210,8 +205,8 @@ public class BatchConfiguration {
 				.writer(customJpaWriter)
 				.faultTolerant()
 				.skip(ConstraintViolationException.class)
-				.skipLimit(2)
-				.listener(chunkListener())
+				.skipLimit(1)
+				.listener(chunkListener)
 				.build();
 	}
 	
