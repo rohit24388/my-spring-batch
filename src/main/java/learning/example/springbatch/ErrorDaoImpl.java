@@ -15,7 +15,7 @@ public class ErrorDaoImpl implements ErrorDao {
 	
 	@Override
 	@Transactional(propagation=Propagation.REQUIRES_NEW)
-	public void addLog(ErrorLog log) {
+	public void addLog(BatchErrorLog log) {
 		entityManager.persist(log);
 		entityManager.flush();
 		entityManager.clear();

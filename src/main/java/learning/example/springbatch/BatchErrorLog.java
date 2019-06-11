@@ -2,17 +2,22 @@ package learning.example.springbatch;
 
 import java.sql.Timestamp;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
-public class ErrorLog {
+@Table(name = "BATCH_ERROR_LOG")
+public class BatchErrorLog {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private int logId;
+	private String actionTaken;
+	@Column(length = 1000)
 	private String error;
 	private Long jobExecutionId;
 	private String jobName;
@@ -20,10 +25,10 @@ public class ErrorLog {
 	private String stepName;
 	private Timestamp timestamp;
 	
-	public ErrorLog() {
+	public BatchErrorLog() {
 	}
 	
-	public ErrorLog(Timestamp timestamp, String error) {
+	public BatchErrorLog(Timestamp timestamp, String error) {
 		super();
 		this.timestamp = timestamp;
 		this.error = error;
@@ -78,6 +83,14 @@ public class ErrorLog {
 
 	public void setStepName(String stepName) {
 		this.stepName = stepName;
+	}
+
+	public String getActionTaken() {
+		return actionTaken;
+	}
+
+	public void setActionTaken(String actionTaken) {
+		this.actionTaken = actionTaken;
 	}
 	
 }
