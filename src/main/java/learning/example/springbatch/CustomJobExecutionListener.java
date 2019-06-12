@@ -15,18 +15,18 @@ public class CustomJobExecutionListener extends JobExecutionListenerSupport {
 	
 	private static final Logger logger = LoggerFactory.getLogger(CustomJobExecutionListener.class);
 	
-	@Autowired
-	@Qualifier("batchReportEmailSender")
-	BatchReportEmailSender emailSender;
+//	@Autowired
+//	@Qualifier("batchReportEmailSender")
+//	BatchReportEmailSender emailSender;
 	
 	@Override
 	public void afterJob(JobExecution jobExecution) {
-		try {
-			emailSender.sendEmail(jobExecution);
-		} catch (MessagingException e) {
-			logger.error("Error sending email report for batch job " + jobExecution.getJobInstance().getJobName());
-			e.printStackTrace();
-		}
+//		try {
+//			emailSender.sendEmail(jobExecution);
+//		} catch (MessagingException e) {
+//			logger.error("Error sending email report for batch job " + jobExecution.getJobInstance().getJobName());
+//			e.printStackTrace();
+//		}
 	}
 	
 }

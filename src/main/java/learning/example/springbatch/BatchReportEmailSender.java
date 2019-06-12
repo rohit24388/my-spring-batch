@@ -12,7 +12,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-@Component("batchReportEmailSender")
+//@Component("batchReportEmailSender")
 public class BatchReportEmailSender {
 
 	@Autowired
@@ -24,7 +24,7 @@ public class BatchReportEmailSender {
 	public void sendEmail(JobExecution jobExecution) throws MessagingException {
 		MimeMessage message = emailSender.createMimeMessage();
 		MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setTo("rohit.raman@iwd.iowa.gov"); 
+        helper.setTo(""); 
         helper.setSubject("Spring Batch");
         message.setContent(composeEmailBody(jobExecution), "text/html");
         emailSender.send(message);

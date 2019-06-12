@@ -87,12 +87,5 @@ public class BatchConfiguration {
 				.listener(chunkListener)
 				.build();
 	}
-	
-	@Bean
-	public Step emailStep(@Qualifier("emailTasklet") Tasklet tasklet) {
-		return stepBuilderFactory.get("emailStep")
-				.tasklet(tasklet)
-				.build();
-	}
 
 }
