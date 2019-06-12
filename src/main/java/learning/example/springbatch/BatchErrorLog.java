@@ -15,7 +15,7 @@ public class BatchErrorLog {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private int logId;
+	private long logId;
 	private String actionTaken;
 	@Column(length = 1000)
 	private String error;
@@ -34,10 +34,10 @@ public class BatchErrorLog {
 		this.error = error;
 	}
 
-	public int getLogId() {
+	public long getLogId() {
 		return logId;
 	}
-	public void setLogId(int logId) {
+	public void setLogId(long logId) {
 		this.logId = logId;
 	}
 	public Timestamp getTimestamp() {

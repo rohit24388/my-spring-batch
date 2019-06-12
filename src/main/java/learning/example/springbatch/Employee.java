@@ -11,9 +11,9 @@ public class Employee {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private int employeeId;
+	private long employeeId;
 	@Column(unique=true)
-	private int personId;
+	private long personId;
 	private String firstName;
 	private String lastName;
 	private String department;
@@ -21,22 +21,22 @@ public class Employee {
 	public Employee() {
 	}
 
-	public Employee(int personId, String firstName, String lastName, String department) {
+	public Employee(long personId, String firstName, String lastName, String department) {
 		this.personId = personId;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.department = department;
 	}
 
-	public int getEmployeeId() {
+	public long getEmployeeId() {
 		return employeeId;
 	}
 
-	public void setEmployeeId(int employeeId) {
+	public void setEmployeeId(long employeeId) {
 		this.employeeId = employeeId;
 	}
 
-	public int getPersonId() {
+	public long getPersonId() {
 		return personId;
 	}
 

@@ -10,7 +10,7 @@ public class Person {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private int personId;
+	private long personId;
 	private String firstName;
 	private String lastName;
 	private String degreeMajor;
@@ -18,17 +18,17 @@ public class Person {
 	public Person() {		
 	}
 	
-	public Person(int personId, String firstName, String lastName, DegreeMajor degreeMajor) {
+	public Person(long personId, String firstName, String lastName, DegreeMajor degreeMajor) {
 		this.personId = personId;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.degreeMajor = degreeMajor.name();
 	}
 	
-	public int getPersonId() {
+	public long getPersonId() {
 		return personId;
 	}
-	public void setPersonId(int personId) {
+	public void setPersonId(long personId) {
 		this.personId = personId;
 	}
 	public String getFirstName() {

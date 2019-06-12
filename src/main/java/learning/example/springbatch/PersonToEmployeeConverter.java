@@ -10,7 +10,7 @@ public class PersonToEmployeeConverter implements ItemProcessor<Person, Employee
 
 	@Override
 	public Employee process(Person person) throws Exception {
-		log.info("The person who is going to be conerted to Employee is - " + person );
+		log.info("The person who is going to be converted to Employee is - " + person );
 		return convertPersonToEmployee(person);
 	}
 	

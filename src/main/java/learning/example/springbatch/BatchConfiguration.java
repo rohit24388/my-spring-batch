@@ -6,11 +6,13 @@ import org.hibernate.SessionFactory;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
@@ -26,7 +28,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class BatchConfiguration {
 	
 	public static final int CHUNK_SIZE = 3;
-	public static final int SKIP_LIMIT = 2;
+	public static final int SKIP_LIMIT = 10;
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -34,10 +36,6 @@ public class BatchConfiguration {
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 	
-	@Autowired
-	@Qualifier("jobListener")
-	private CustomJobExecutionListener jobListener;
-
 	private SessionFactory sessionFactory;
 	
 	@Autowired
@@ -66,17 +64,18 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public Job dbWriteJob(Step step1) {
-		return jobBuilderFactory.get("dbWriteJob")
+	public Job myJob(Step dbReadWriteStep, @Qualifier("myJobListener") JobExecutionListener listener) {
+		return jobBuilderFactory.get("myJob")
 				.incrementer(new RunIdIncrementer())
-				.flow(step1)
+				.flow(dbReadWriteStep)
 				.end()
+				.listener(listener)
 				.build();
 	}
 
 	@Bean
-	public Step step1(ItemWriter<Employee> customJpaWriter, ChunkListener chunkListener) {
-		return stepBuilderFactory.get("step1")
+	public Step dbReadWriteStep(ItemWriter<Employee> customJpaWriter, ChunkListener chunkListener) {
+		return stepBuilderFactory.get("dbReadWriteStep")
 				.transactionManager(transactionManager)
 				.<Person, Employee>chunk(CHUNK_SIZE)
 				.reader(hibernateReader())
@@ -86,6 +85,13 @@ public class BatchConfiguration {
 				.skip(ConstraintViolationException.class)
 				.skipLimit(SKIP_LIMIT)
 				.listener(chunkListener)
+				.build();
+	}
+	
+	@Bean
+	public Step emailStep(@Qualifier("emailTasklet") Tasklet tasklet) {
+		return stepBuilderFactory.get("emailStep")
+				.tasklet(tasklet)
 				.build();
 	}
 
