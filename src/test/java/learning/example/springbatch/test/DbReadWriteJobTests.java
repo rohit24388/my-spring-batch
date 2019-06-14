@@ -1,11 +1,15 @@
 package learning.example.springbatch.test;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,18 +80,18 @@ public class DbReadWriteJobTests {
 	public void testStepAndJob() throws Exception {
 		JobExecution jobExecution = jobLauncherTestUtils.launchJob();
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
+			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
 		}
-		Assert.assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode());
+		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode());
 	}
 	
 	@Test
-	public void testStepOnly() throws Exception { //not exactly working as expected. Running the entire job, so same as testStepAndJob()
+	public void testStepOnly() throws Exception { //does not add value in case of a single-step job
 		JobExecution jobExecution = jobLauncherTestUtils.launchStep("dbReadWriteStep");
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
+			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
 		}
-		Assert.assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode());
+		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode());
 	}
 	
 	@Test
@@ -101,12 +105,12 @@ public class DbReadWriteJobTests {
 		Person p1 = hibernateReader.read();
 		Person p2 = hibernateReader.read();
 		Person p3 = hibernateReader.read();
-		Assert.assertNull(hibernateReader.read());
+		assertNull(hibernateReader.read());
 		hibernateReader.update(executionContext);
 		hibernateReader.close();
-		Assert.assertEquals("1st", p1.getFirstName());
-		Assert.assertEquals("2nd", p2.getFirstName());
-		Assert.assertEquals("3rd", p3.getFirstName());
+		assertEquals("1st", p1.getFirstName());
+		assertEquals("2nd", p2.getFirstName());
+		assertEquals("3rd", p3.getFirstName());
 	}
 	
 	@Test
@@ -123,7 +127,7 @@ public class DbReadWriteJobTests {
 		List<Employee> actualEmployees = jdbcTemplate.
 				query("select person_id, first_name, last_name, department from EMPLOYEE order by person_id", 
 						new BeanPropertyRowMapper<Employee>(Employee.class));
-		Assert.assertArrayEquals(expectedEmployees.toArray(), actualEmployees.toArray());
+		assertArrayEquals(expectedEmployees.toArray(), actualEmployees.toArray());
 	}
 	
 	@Test
@@ -132,18 +136,18 @@ public class DbReadWriteJobTests {
 		JobExecution jobExecution = jobLauncherTestUtils.launchJob(); //all record in PERSON table should process and copy over to EMPLOYEE
 		Integer[] expectedPersonIds = {1,2,3,4,5,6,7};
 		List<Integer> actualPersonIds = jdbcTemplate.queryForList("select PERSON_ID from EMPLOYEE", Integer.class);
-		Assert.assertArrayEquals(expectedPersonIds, actualPersonIds.toArray());
+		assertArrayEquals(expectedPersonIds, actualPersonIds.toArray());
 		int initialCount = jdbcTemplate.queryForObject("select count(*) from EMPLOYEE", Integer.class);
-		Assert.assertEquals(7, initialCount);
+		assertEquals(7, initialCount);
 		jdbcTemplate.execute("delete from EMPLOYEE where person_id in (1,2,4)"); //3 out 7 records deleted, leaving 4 records which is equal to SKIP_LIMIT
 		int countAfterDelete = jdbcTemplate.queryForObject("select count(*) from EMPLOYEE", Integer.class);
-		Assert.assertEquals(BatchConfiguration.SKIP_LIMIT, countAfterDelete);
+		assertEquals(BatchConfiguration.SKIP_LIMIT, countAfterDelete);
 		jobExecution = jobLauncherTestUtils.launchJob(); //rerun of the job must skip the records already present in EMPLOYEE
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); //Step status
-			Assert.assertEquals(BatchConfiguration.SKIP_LIMIT, stepExecution.getWriteSkipCount());
+			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); //Step status
+			assertEquals(BatchConfiguration.SKIP_LIMIT, stepExecution.getWriteSkipCount());
 		}
-		Assert.assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); //Job status
+		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); //Job status
 	}	
 	
 	@Test
@@ -152,18 +156,18 @@ public class DbReadWriteJobTests {
 		JobExecution jobExecution = jobLauncherTestUtils.launchJob(); //all record in PERSON table should process and copy over to EMPLOYEE
 		Integer[] expectedPersonIds = {1,2,3,4,5,6,7};
 		List<Integer> actualPersonIds = jdbcTemplate.queryForList("select PERSON_ID from EMPLOYEE", Integer.class);
-		Assert.assertArrayEquals(expectedPersonIds, actualPersonIds.toArray());
+		assertArrayEquals(expectedPersonIds, actualPersonIds.toArray());
 		int initialCount = jdbcTemplate.queryForObject("select count(*) from EMPLOYEE", Integer.class);
-		Assert.assertEquals(7, initialCount);
+		assertEquals(7, initialCount);
 		jdbcTemplate.execute("delete from EMPLOYEE where person_id in (1,4)"); //2 out 7 records deleted, leaving 5 records which is greater SKIP_LIMIT
 		int countAfterDelete = jdbcTemplate.queryForObject("select count(*) from EMPLOYEE", Integer.class);
-		Assert.assertTrue(countAfterDelete > BatchConfiguration.SKIP_LIMIT);
+		assertTrue(countAfterDelete > BatchConfiguration.SKIP_LIMIT);
 		jobExecution = jobLauncherTestUtils.launchJob();
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("FAILED", stepExecution.getExitStatus().getExitCode()); //Step status
-			Assert.assertEquals(BatchConfiguration.SKIP_LIMIT, stepExecution.getWriteSkipCount()); //SKIP_LIMIT was already reached when there was one more record to skip
+			assertEquals("FAILED", stepExecution.getExitStatus().getExitCode()); //Step status
+			assertEquals(BatchConfiguration.SKIP_LIMIT, stepExecution.getWriteSkipCount()); //SKIP_LIMIT was already reached when there was one more record to skip
 		}
-		Assert.assertEquals("FAILED", jobExecution.getExitStatus().getExitCode()); //Job status
+		assertEquals("FAILED", jobExecution.getExitStatus().getExitCode()); //Job status
 	}
 	
 	@Test
@@ -173,8 +177,8 @@ public class DbReadWriteJobTests {
 		jdbcTemplate.execute("insert into person (person_id, first_name, last_name, degree_major) values (100, '100th', 'Person', 'Hospitality')");
 		JobExecution jobExecution = jobLauncherTestUtils.launchStep("dbReadWriteStep");
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("FAILED", stepExecution.getExitStatus().getExitCode());
-			Assert.assertEquals(0, stepExecution.getWriteSkipCount()); //not skipped because ConstarintViolationException is the only skippable exception
+			assertEquals("FAILED", stepExecution.getExitStatus().getExitCode());
+			assertEquals(0, stepExecution.getWriteSkipCount()); //not skipped because ConstarintViolationException is the only skippable exception
 		}
 	}
 	
@@ -190,8 +194,8 @@ public class DbReadWriteJobTests {
 		jdbcTemplate.execute("drop table EMPLOYEE");
 		JobExecution jobExecution = jobLauncherTestUtils.launchStep("dbReadWriteStep");
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("FAILED", stepExecution.getExitStatus().getExitCode());
-			Assert.assertEquals(0, stepExecution.getWriteSkipCount()); //not skipped because ConstarintViolationException is the only skippable exception
+			assertEquals("FAILED", stepExecution.getExitStatus().getExitCode());
+			assertEquals(0, stepExecution.getWriteSkipCount()); //not skipped because ConstarintViolationException is the only skippable exception
 		}
 	}
 	
@@ -202,13 +206,13 @@ public class DbReadWriteJobTests {
 		jdbcTemplate.execute("insert into person (person_id, first_name, last_name, degree_major) values (1, '1st', 'Person', 'Engineering')");
 		JobExecution jobExecution = jobLauncherTestUtils.launchStep("dbReadWriteStep");
 		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			Assert.assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
+			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode());
 			//BELOW: not processed because 'engineering' is a valid Degree/Major but something that PersonToEmployeeConverter cannot map to a Department
-			Assert.assertEquals(1, stepExecution.getReadCount());
-			Assert.assertEquals(0, stepExecution.getWriteCount());
+			assertEquals(1, stepExecution.getReadCount());
+			assertEquals(0, stepExecution.getWriteCount());
 		}
 		int employeeCount = jdbcTemplate.queryForObject("select count(*) from EMPLOYEE", Integer.class);
-		Assert.assertEquals(0, employeeCount);
+		assertEquals(0, employeeCount);
 	}
 	
 	//@Test
