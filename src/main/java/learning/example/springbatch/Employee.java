@@ -11,9 +11,9 @@ public class Employee {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private long employeeId;
+	private int employeeId;
 	@Column(unique=true)
-	private long personId;
+	private int personId;
 	private String firstName;
 	private String lastName;
 	private String department;
@@ -21,22 +21,22 @@ public class Employee {
 	public Employee() {
 	}
 
-	public Employee(long personId, String firstName, String lastName, String department) {
+	public Employee(int personId, String firstName, String lastName, String department) {
 		this.personId = personId;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.department = department;
 	}
 
-	public long getEmployeeId() {
+	public int getEmployeeId() {
 		return employeeId;
 	}
 
-	public void setEmployeeId(long employeeId) {
+	public void setEmployeeId(int employeeId) {
 		this.employeeId = employeeId;
 	}
 
-	public long getPersonId() {
+	public int getPersonId() {
 		return personId;
 	}
 
@@ -72,6 +72,14 @@ public class Employee {
 	public String toString() {
 		return "employee_id: " + employeeId + ", first_name: " + firstName + 
 				", last_name: " + lastName + ", department: " + department + ", person_id: " + personId;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Employee && ((Employee)obj).getPersonId() == this.personId) {
+			return true;
+		}
+		return false;
 	}
 	
 }

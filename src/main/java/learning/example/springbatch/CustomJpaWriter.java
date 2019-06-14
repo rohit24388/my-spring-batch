@@ -4,13 +4,14 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceException;
 
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
 @Component("customJpaWriter")
-public class CustomJpaWriter implements ItemWriter<Employee> {
+public class CustomJpaWriter implements ItemWriter<Employee> { 
 	
 	@PersistenceContext
 	private EntityManager entityManger;
@@ -21,7 +22,7 @@ public class CustomJpaWriter implements ItemWriter<Employee> {
 			entityManger.persist(employee);
 			try {
 				entityManger.flush();
-			} catch(Exception e) {
+			} catch(PersistenceException e) {
 				if(e.getCause() instanceof ConstraintViolationException) {
 					throw new ConstraintViolationException("Tried to insert an Employee record with a non-unique person_id of " + employee.getPersonId(), null, null);
 				}

@@ -31,8 +31,9 @@ public class PersonToEmployeeConverter implements ItemProcessor<Person, Employee
 				break;
 
 			default:
+				return null; // a valid DegreeNajor enum value but something other than Business/Commerce/Science is filtered out by the processor
 			}
-		} catch (NullPointerException npe) { // This will be thrown when when the Degree Major is something other than
+		} catch (NullPointerException npe) { // This will be thrown when when the Degree/Major is something other than
 												// DegreeMajor enum
 			throw new DegreeMajorNotRecognizedException("'" + person.getDegreeMajor() + "' is not a recognized degree major!");
 		}

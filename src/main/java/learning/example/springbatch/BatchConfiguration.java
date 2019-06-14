@@ -12,7 +12,6 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.HibernateCursorItemReader;
@@ -28,7 +27,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class BatchConfiguration {
 	
 	public static final int CHUNK_SIZE = 3;
-	public static final int SKIP_LIMIT = 10;
+	public static final int SKIP_LIMIT = 4;
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -55,22 +54,12 @@ public class BatchConfiguration {
 	@Bean
 	public HibernateCursorItemReader<Person> hibernateReader() {
 		return new HibernateCursorItemReaderBuilder<Person>().name("hibernateReader").sessionFactory(sessionFactory)
-				.queryString("from Person").build();
+				.queryString("from Person p order by p.personId").build();
 	}
 	
 	@Bean
 	public ItemProcessor<Person, Employee> processor() {
 		return new PersonToEmployeeConverter();
-	}
-	
-	@Bean
-	public Job myJob(Step dbReadWriteStep, @Qualifier("myJobListener") JobExecutionListener listener) {
-		return jobBuilderFactory.get("myJob")
-				.incrementer(new RunIdIncrementer())
-				.flow(dbReadWriteStep)
-				.end()
-				.listener(listener)
-				.build();
 	}
 
 	@Bean
@@ -86,6 +75,16 @@ public class BatchConfiguration {
 				.skipLimit(SKIP_LIMIT)
 				.listener(chunkListener)
 				.build();
-	}
+	}	
+	
+	@Bean
+	public Job dbReadWriteJob(Step dbReadWriteStep, @Qualifier("myJobListener") JobExecutionListener listener) {
+		return jobBuilderFactory.get("dbReadWriteJob")
+				.incrementer(new RunIdIncrementer())
+				.flow(dbReadWriteStep)
+				.end()
+				.listener(listener)
+				.build();
+	}	
 
 }

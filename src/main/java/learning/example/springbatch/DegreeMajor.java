@@ -2,7 +2,7 @@ package learning.example.springbatch;
 
 public enum DegreeMajor {
 
-	SCIENCE("Science"), COMMERCE("Commerce"), BUSINESS("Business");
+	SCIENCE("Science"), COMMERCE("Commerce"), BUSINESS("Business"), ENGINEERING("Engineering");
 	
 	private String value;
 	
