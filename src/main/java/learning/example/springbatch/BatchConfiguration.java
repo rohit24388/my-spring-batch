@@ -1,5 +1,8 @@
 package learning.example.springbatch;
 
+import java.io.IOException;
+import java.io.Writer;
+
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
@@ -19,6 +22,7 @@ import org.springframework.batch.item.database.HibernateCursorItemReader;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.file.FlatFileHeaderCallback;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
@@ -86,9 +90,25 @@ public class BatchConfiguration {
 	
 	@Bean
 	public FlatFileItemWriter<EmployeeDetails> textFileWriter() {
-		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("flatFileWriter")
+		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("textFileWriter")
 				.resource(new FileSystemResource(TEXT_FILE_PATH))
 				.lineAggregator(new PassThroughLineAggregator<>()).build();
+	}
+	
+	@Bean
+	FlatFileHeaderCallback csvHeader() {
+		FlatFileHeaderCallback csvHeader = new FlatFileHeaderCallback() {			
+			@Override
+			public void writeHeader(Writer writer) throws IOException {
+				 writer.write("employee_id,");
+				 writer.write("first_name,");
+				 writer.write("last_name,");
+				 writer.write("department,");
+				 writer.write("person_id,");
+				 writer.write("degree_major");
+			}
+		};
+		return csvHeader;
 	}
 	
 	@Bean
@@ -107,8 +127,9 @@ public class BatchConfiguration {
 	
 	@Bean
 	public FlatFileItemWriter<EmployeeDetails> csvWriter() {
-		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("flatFileWriter")
+		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("csvWriter")
 				.resource(new FileSystemResource(CSV_FILE_PATH))
+				.headerCallback(csvHeader())
 				.lineAggregator(delimitedLineAggregator()).build();
 	}
 
@@ -129,7 +150,7 @@ public class BatchConfiguration {
 	
 	@Bean
 	public Step dbReadTextWriteStep() {
-		return stepBuilderFactory.get("dbReadFlatFileWriteStep")
+		return stepBuilderFactory.get("dbReadTextWriteStep")
 				.transactionManager(transactionManager)
 				.<EmployeeDetails, EmployeeDetails>chunk(3)
 				.reader(jdbcReader())
@@ -139,7 +160,7 @@ public class BatchConfiguration {
 	
 	@Bean
 	public Step dbReadCsvWriteStep() {
-		return stepBuilderFactory.get("dbReadFlatFileWriteStep")
+		return stepBuilderFactory.get("dbReadCsvWriteStep")
 				.transactionManager(transactionManager)
 				.<EmployeeDetails, EmployeeDetails>chunk(3)
 				.reader(jdbcReader())
@@ -158,9 +179,10 @@ public class BatchConfiguration {
 	}	
 	
 	@Bean
-	public Job dbReadCsvWrite(Step dbReadWriteStep) {
-		return jobBuilderFactory.get("dbReadCsvWriteJob").incrementer(new RunIdIncrementer())
-				.start(dbReadWriteStep).on("*").to(dbReadTextWriteStep())
+	public Job dbReadFlatFileWriteJob(Step dbReadWriteStep) {
+		return jobBuilderFactory.get("dbReadFlatFileWriteJob").incrementer(new RunIdIncrementer())
+				.start(dbReadWriteStep).on("FAILED").to(dbReadTextWriteStep())
+				.from(dbReadWriteStep).on("*").to(dbReadCsvWriteStep())
 				.end()
 				.build();
 	}

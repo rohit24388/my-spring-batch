@@ -91,40 +91,18 @@ public class DbReadCsvWriteJobTests {
 				"insert into person (person_id, first_name, last_name, degree_major) values (2, '2nd', 'Person', 'Commerce')");
 	}
 
-//	@Test
-//	public void testStepAndJob() throws Exception {
-//		JobExecution jobExecution = jobLauncherTestUtils.launchJob();
-//		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
-//			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); //test for success of all steps
-//		}
-//		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); //test success for the overall job
-//		File csvFile = new File(BatchConfiguration.CSV_FILE_PATH);
-//		assertTrue(csvFile.exists()); //file was created by the dbReadCsvWriteStep step
-//		assertNotEquals(0, csvFile.length()); //file is not empty
-//		assertEquals(2, countLinesInCsvFile()); //since PERSON table contains 2 rows
-//		List<EmployeeDetails> employeeDetailsList = readEmployeeDetailsFromCsvFile(); //retrieve all EmployeDetails objects from employeeDetails.csv
-//		assertEquals(2, employeeDetailsList.size());
-//		EmployeeDetails secondEmployeeDetails = employeeDetailsList.get(1);
-//		assertEquals(2, secondEmployeeDetails.getEmployeeId());
-//		assertEquals("2nd", secondEmployeeDetails.getFirstName());
-//		assertEquals("Person", secondEmployeeDetails.getLastName());
-//		assertEquals("Commerce", secondEmployeeDetails.getDegreeMajor());
-//	}
-
 	@Test
 	public void testStepAndJob() throws Exception {
 		JobExecution jobExecution = jobLauncherTestUtils.launchJob();
-		for (StepExecution stepExecution : jobExecution.getStepExecutions()) {
-			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); // test for success of all steps
+		for(StepExecution stepExecution : jobExecution.getStepExecutions()) {
+			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); //test for success of all steps
 		}
-		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); // test success for the overall job
-		File textFile = new File(BatchConfiguration.TEXT_FILE_PATH);
-		assertTrue(textFile.exists()); // file was created by the dbReadCsvWriteStep step
-		assertNotEquals(0, textFile.length()); // file is not empty
-		assertEquals(2, countLinesInTextFile()); // since PERSON table contains 2 rows
-		List<EmployeeDetails> employeeDetailsList = readEmployeeDetailsFromTextFile(); // retrieve all EmployeDetails
-																						// objects from
-																						// employeeDetails.txt
+		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); //test success for the overall job
+		File csvFile = new File(BatchConfiguration.CSV_FILE_PATH);
+		assertTrue(csvFile.exists()); //file was created by the dbReadCsvWriteStep step
+		assertNotEquals(0, csvFile.length()); //file is not empty
+		assertEquals(2, countLinesInCsvFile()); //since PERSON table contains 2 rows
+		List<EmployeeDetails> employeeDetailsList = readEmployeeDetailsFromCsvFile(); //retrieve all EmployeDetails objects from employeeDetails.csv
 		assertEquals(2, employeeDetailsList.size());
 		EmployeeDetails secondEmployeeDetails = employeeDetailsList.get(1);
 		assertEquals(2, secondEmployeeDetails.getEmployeeId());
@@ -132,6 +110,28 @@ public class DbReadCsvWriteJobTests {
 		assertEquals("Person", secondEmployeeDetails.getLastName());
 		assertEquals("Commerce", secondEmployeeDetails.getDegreeMajor());
 	}
+
+//	@Test
+//	public void testStepAndJob() throws Exception {
+//		JobExecution jobExecution = jobLauncherTestUtils.launchJob();
+//		for (StepExecution stepExecution : jobExecution.getStepExecutions()) {
+//			assertEquals("COMPLETED", stepExecution.getExitStatus().getExitCode()); // test for success of all steps
+//		}
+//		assertEquals("COMPLETED", jobExecution.getExitStatus().getExitCode()); // test success for the overall job
+//		File textFile = new File(BatchConfiguration.TEXT_FILE_PATH);
+//		assertTrue(textFile.exists()); // file was created by the dbReadCsvWriteStep step
+//		assertNotEquals(0, textFile.length()); // file is not empty
+//		assertEquals(2, countLinesInTextFile()); // since PERSON table contains 2 rows
+//		List<EmployeeDetails> employeeDetailsList = readEmployeeDetailsFromTextFile(); // retrieve all EmployeDetails
+//																						// objects from
+//																						// employeeDetails.txt
+//		assertEquals(2, employeeDetailsList.size());
+//		EmployeeDetails secondEmployeeDetails = employeeDetailsList.get(1);
+//		assertEquals(2, secondEmployeeDetails.getEmployeeId());
+//		assertEquals("2nd", secondEmployeeDetails.getFirstName());
+//		assertEquals("Person", secondEmployeeDetails.getLastName());
+//		assertEquals("Commerce", secondEmployeeDetails.getDegreeMajor());
+//	}
 
 	@Test
 	public void testDbReadWriteStepOnly() throws Exception {
@@ -214,7 +214,7 @@ public class DbReadCsvWriteJobTests {
 		do {
 			fieldSet = textReader.read();
 			if (fieldSet != null) {
-				EmployeeDetails employeeDetails = mapFieldSetToEmploeeDetails(fieldSet);
+				EmployeeDetails employeeDetails = mapFieldSetToEmployeeDetails(fieldSet);
 				employeeDetailsList.add(employeeDetails);
 			}
 		} while (fieldSet != null);
@@ -222,7 +222,7 @@ public class DbReadCsvWriteJobTests {
 		return employeeDetailsList;
 	}
 
-	private EmployeeDetails mapFieldSetToEmploeeDetails(FieldSet fieldSet) {
+	private EmployeeDetails mapFieldSetToEmployeeDetails(FieldSet fieldSet) {
 		EmployeeDetails employeeDetails = new EmployeeDetails();
 		String[] values = fieldSet.getValues();
 		employeeDetails.setEmployeeId(Integer.valueOf(StringUtils.substringAfter(values[0], ": ")));
@@ -242,7 +242,9 @@ public class DbReadCsvWriteJobTests {
 					{
 						setTargetType(EmployeeDetails.class);
 					}
-				}).build();
+				})
+				.linesToSkip(1)
+				.build();
 	}
 
 	private FlatFileItemReader<FieldSet> getTextReader() {
