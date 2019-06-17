@@ -38,7 +38,8 @@ public class BatchConfiguration {
 	
 	public static final int CHUNK_SIZE = 3;
 	public static final int SKIP_LIMIT = 4;
-	public static final String CSV_FILE_PATH = "target/test-outputs/employeeDetails.csv";  
+	public static final String TEXT_FILE_PATH = "target/test-outputs/employeeDetails.txt";
+	public static final String CSV_FILE_PATH = "target/test-outputs/employeeDetails.csv";
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -86,7 +87,7 @@ public class BatchConfiguration {
 	@Bean
 	public FlatFileItemWriter<EmployeeDetails> textFileWriter() {
 		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("flatFileWriter")
-				.resource(new FileSystemResource("target/test-outputs/employeeDetails.txt"))
+				.resource(new FileSystemResource(TEXT_FILE_PATH))
 				.lineAggregator(new PassThroughLineAggregator<>()).build();
 	}
 	
@@ -127,6 +128,16 @@ public class BatchConfiguration {
 	}	
 	
 	@Bean
+	public Step dbReadTextWriteStep() {
+		return stepBuilderFactory.get("dbReadFlatFileWriteStep")
+				.transactionManager(transactionManager)
+				.<EmployeeDetails, EmployeeDetails>chunk(3)
+				.reader(jdbcReader())
+				.writer(textFileWriter())
+				.build();
+	}
+	
+	@Bean
 	public Step dbReadCsvWriteStep() {
 		return stepBuilderFactory.get("dbReadFlatFileWriteStep")
 				.transactionManager(transactionManager)
@@ -147,9 +158,9 @@ public class BatchConfiguration {
 	}	
 	
 	@Bean
-	public Job dbWriteAndMergeJob(Step dbReadWriteStep) {
-		return jobBuilderFactory.get("dbWriteAndMergeJob").incrementer(new RunIdIncrementer())
-				.start(dbReadWriteStep).on("*").to(dbReadCsvWriteStep())
+	public Job dbReadCsvWrite(Step dbReadWriteStep) {
+		return jobBuilderFactory.get("dbReadCsvWriteJob").incrementer(new RunIdIncrementer())
+				.start(dbReadWriteStep).on("*").to(dbReadTextWriteStep())
 				.end()
 				.build();
 	}
