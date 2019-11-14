@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -58,11 +59,6 @@ public class BatchConfiguration {
 		return new PersonToEmployeeConverter();
 	}
 	
-//	@Bean
-//	public ItemWriter<Employee> writer(EntityManagerFactory entityManagerFactory) {
-//		return new JpaItemWriterBuilder<Employee>().entityManagerFactory(entityManagerFactory).build();
-//	}
-		
 	@Bean
 	public ItemWriter<Employee> writer(EntityManagerFactory entityManagerFactory) {
 		return new EmployeeWriter(entityManagerFactory);
@@ -70,7 +66,7 @@ public class BatchConfiguration {
 	
 	@Bean
 	public TaskExecutor taskExecutor(){
-		return new SimpleAsyncTaskExecutor("my_spring_batch");
+		return new SyncTaskExecutor();
 	}
 	
 	@Bean
