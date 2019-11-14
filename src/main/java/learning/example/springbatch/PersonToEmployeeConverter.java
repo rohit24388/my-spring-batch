@@ -10,14 +10,14 @@ public class PersonToEmployeeConverter implements ItemProcessor<Person, Employee
 
 	@Override
 	public Employee process(Person person) throws Exception {
-		log.info("The person who is going to be converted to Employee is - " + person );
+		log.info("Processing {}", person );
 		return convertPersonToEmployee(person);
 	}
 	
 	private Employee convertPersonToEmployee(Person person) {
 		String department = null;
 		try {
-			switch (DegreeMajor.getEnum(person.getDegreeMajor())) {
+			switch (Degree.getEnum(person.getDegree())) {
 			case BUSINESS:
 				department = Department.AGENCY.getValue();
 				break;
@@ -33,11 +33,17 @@ public class PersonToEmployeeConverter implements ItemProcessor<Person, Employee
 			default:
 				return null; // a valid DegreeNajor enum value but something other than Business/Commerce/Science is filtered out by the processor
 			}
-		} catch (NullPointerException npe) { // This will be thrown when when the Degree/Major is something other than
+		} catch (NullPointerException npe) { // This will be thrown when when the Degree is something other than
 												// DegreeMajor enum
-			throw new DegreeMajorNotRecognizedException("'" + person.getDegreeMajor() + "' is not a recognized degree major!");
+			throw new DegreeNotRecognizedException("'" + person.getDegree() + "' is not a recognized degree major!");
 		}
-		return new Employee(person.getPersonId(), person.getFirstName(), person.getLastName(), department);
+		Employee employee = new Employee();
+		employee.setPersonId(person.getPersonId());
+		employee.setFirstName(person.getFirstName());
+		employee.setLastName(person.getLastName());
+		employee.setDepartment(department);
+		
+		return employee;
 	}
 
 }

@@ -1,39 +1,23 @@
 package learning.example.springbatch;
 
-import java.io.IOException;
-import java.io.Writer;
-
 import javax.persistence.EntityManagerFactory;
-import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.HibernateCursorItemReader;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
-import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
-import org.springframework.batch.item.file.FlatFileHeaderCallback;
-import org.springframework.batch.item.file.FlatFileItemWriter;
-import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
-import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
-import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
-import org.springframework.batch.item.file.transform.PassThroughLineAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -41,7 +25,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class BatchConfiguration {
 	
 	public static final int CHUNK_SIZE = 3;
-	public static final int SKIP_LIMIT = 4;
+	public static final int MAXIMUM_THREAD_COUNT = 2;
 	public static final String TEXT_FILE_PATH = "target/test-outputs/employeeDetails.txt";
 	public static final String CSV_FILE_PATH = "target/test-outputs/employeeDetails.csv";
 
@@ -51,17 +35,11 @@ public class BatchConfiguration {
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 	
-	@Autowired
-	private DataSource dataSource;
-	
 	private SessionFactory sessionFactory;
 	
 	@Autowired
 	private PlatformTransactionManager transactionManager; 
  	
-	@Autowired
-	ConstraintViolationExceptionSkipper constraintViolationExceptionSkipper;
-	
 	@Autowired
 	public BatchConfiguration(EntityManagerFactory entityManagerFactory) {
 		if (entityManagerFactory.unwrap(SessionFactory.class) == null) {
@@ -71,16 +49,8 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	public HibernateCursorItemReader<Person> hibernateReader() {
-		return new HibernateCursorItemReaderBuilder<Person>().name("hibernateReader").sessionFactory(sessionFactory)
-				.queryString("from Person p order by p.personId").build();
-	}
-	
-	@Bean(destroyMethod = "")
-	public JdbcCursorItemReader<EmployeeDetails> jdbcReader() {
-		return new JdbcCursorItemReaderBuilder<EmployeeDetails>().dataSource(dataSource).name("jdbcReader")
-				.sql("select e.*, p.degree_major from employee e join person p on e.person_id = p.person_id order by e.person_id")
-				.rowMapper(new BeanPropertyRowMapper<>(EmployeeDetails.class)).build();
+	public ItemReader<Person> reader() {
+		return new PersonReader(sessionFactory);
 	}
 	
 	@Bean
@@ -88,103 +58,42 @@ public class BatchConfiguration {
 		return new PersonToEmployeeConverter();
 	}
 	
+//	@Bean
+//	public ItemWriter<Employee> writer(EntityManagerFactory entityManagerFactory) {
+//		return new JpaItemWriterBuilder<Employee>().entityManagerFactory(entityManagerFactory).build();
+//	}
+		
 	@Bean
-	public FlatFileItemWriter<EmployeeDetails> textFileWriter() {
-		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("textFileWriter")
-				.resource(new FileSystemResource(TEXT_FILE_PATH))
-				.lineAggregator(new PassThroughLineAggregator<>()).build();
+	public ItemWriter<Employee> writer(EntityManagerFactory entityManagerFactory) {
+		return new EmployeeWriter(entityManagerFactory);
 	}
 	
 	@Bean
-	FlatFileHeaderCallback csvHeader() {
-		FlatFileHeaderCallback csvHeader = new FlatFileHeaderCallback() {			
-			@Override
-			public void writeHeader(Writer writer) throws IOException {
-				 writer.write("employee_id,");
-				 writer.write("first_name,");
-				 writer.write("last_name,");
-				 writer.write("department,");
-				 writer.write("person_id,");
-				 writer.write("degree_major");
-			}
-		};
-		return csvHeader;
+	public TaskExecutor taskExecutor(){
+		return new SimpleAsyncTaskExecutor("my_spring_batch");
 	}
 	
 	@Bean
-	DelimitedLineAggregator<EmployeeDetails> delimitedLineAggregator() {
-		return new DelimitedLineAggregator<EmployeeDetails>() {
-            {
-                setDelimiter(",");
-                setFieldExtractor(new BeanWrapperFieldExtractor<EmployeeDetails>() {
-                    {
-                        setNames(new String[] { "employeeId", "firstName", "lastName", "department", "personId", "degreeMajor" });
-                    }
-                });
-            }
-        };
-	}
-	
-	@Bean
-	public FlatFileItemWriter<EmployeeDetails> csvWriter() {
-		return new FlatFileItemWriterBuilder<EmployeeDetails>().name("csvWriter")
-				.resource(new FileSystemResource(CSV_FILE_PATH))
-				.headerCallback(csvHeader())
-				.lineAggregator(delimitedLineAggregator()).build();
-	}
-
-	@Bean
-	public Step dbReadWriteStep(ItemWriter<Employee> customJpaWriter, ChunkListener chunkListener) {
+	public Step dbReadWriteStep(ItemWriter<Employee> writer, ChunkListener chunkListener) {
 		return stepBuilderFactory.get("dbReadWriteStep")
 				.transactionManager(transactionManager)
 				.<Person, Employee>chunk(CHUNK_SIZE)
-				.reader(hibernateReader())
+				.reader(reader())
 				.processor(processor())
-				.writer(customJpaWriter)
-				.faultTolerant()
-				.skip(ConstraintViolationException.class)
-				.skipLimit(SKIP_LIMIT)
+				.writer(writer)
+				.taskExecutor(taskExecutor())
+				.throttleLimit(2)
 				.listener(chunkListener)
 				.build();
 	}	
 	
 	@Bean
-	public Step dbReadTextWriteStep() {
-		return stepBuilderFactory.get("dbReadTextWriteStep")
-				.transactionManager(transactionManager)
-				.<EmployeeDetails, EmployeeDetails>chunk(3)
-				.reader(jdbcReader())
-				.writer(textFileWriter())
-				.build();
-	}
-	
-	@Bean
-	public Step dbReadCsvWriteStep() {
-		return stepBuilderFactory.get("dbReadCsvWriteStep")
-				.transactionManager(transactionManager)
-				.<EmployeeDetails, EmployeeDetails>chunk(3)
-				.reader(jdbcReader())
-				.writer(csvWriter())
-				.build();
-	}
-	
-	//@Bean
-	public Job dbReadWriteJob(Step dbReadWriteStep, @Qualifier("myJobListener") JobExecutionListener listener) {
+	public Job dbReadWriteJob(Step dbReadWriteStep) {
 		return jobBuilderFactory.get("dbReadWriteJob")
 				.incrementer(new RunIdIncrementer())
 				.flow(dbReadWriteStep)
 				.end()
-				.listener(listener)
 				.build();
 	}	
-	
-	@Bean
-	public Job dbReadFlatFileWriteJob(Step dbReadWriteStep) {
-		return jobBuilderFactory.get("dbReadFlatFileWriteJob").incrementer(new RunIdIncrementer())
-				.start(dbReadWriteStep).on("FAILED").to(dbReadTextWriteStep())
-				.from(dbReadWriteStep).on("*").to(dbReadCsvWriteStep())
-				.end()
-				.build();
-	}
 
 }

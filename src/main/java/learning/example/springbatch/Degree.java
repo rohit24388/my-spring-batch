@@ -1,19 +1,19 @@
 package learning.example.springbatch;
 
-public enum DegreeMajor {
+public enum Degree {
 
 	SCIENCE("Science"), COMMERCE("Commerce"), BUSINESS("Business"), ENGINEERING("Engineering");
 	
 	private String value;
 	
-	private DegreeMajor(String value) {
+	private Degree(String value) {
 		this.value = value;
 	}
 	
-	public static DegreeMajor getEnum(String value) {
-		for(DegreeMajor degreeMajor : values()) {
-			if(degreeMajor.getValue().equals(value)) {
-				return degreeMajor;
+	public static Degree getEnum(String value) {
+		for(Degree degree : values()) {
+			if(degree.getValue().equals(value)) {
+				return degree;
 			}
 		}
 		return null;
