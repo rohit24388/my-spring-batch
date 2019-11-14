@@ -13,11 +13,13 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.HibernateCursorItemReader;
+import org.springframework.batch.item.database.builder.HibernateCursorItemReaderBuilder;
+import org.springframework.batch.item.support.builder.SynchronizedItemStreamReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -50,8 +52,11 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	public ItemReader<Person> reader() {
-		return new PersonReader(sessionFactory);
+	public ItemReader<Person> reader() {		
+		HibernateCursorItemReader<Person> delegate = new HibernateCursorItemReaderBuilder<Person>()
+				.name("hibernateReader").sessionFactory(sessionFactory)
+				.queryString("from Person p order by p.personId").build();		
+		return new SynchronizedItemStreamReaderBuilder<Person>().delegate(delegate).build();
 	}
 	
 	@Bean
@@ -66,7 +71,7 @@ public class BatchConfiguration {
 	
 	@Bean
 	public TaskExecutor taskExecutor(){
-		return new SyncTaskExecutor();
+		return new SimpleAsyncTaskExecutor("my_spring_batch");
 	}
 	
 	@Bean
