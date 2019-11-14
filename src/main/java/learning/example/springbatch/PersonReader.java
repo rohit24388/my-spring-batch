@@ -14,7 +14,7 @@ public class PersonReader extends HibernateCursorItemReader<Person> {
 	}
 	
 	@Override
-	public Person read() throws Exception, UnexpectedInputException, ParseException {
+	public synchronized Person read() throws Exception, UnexpectedInputException, ParseException {
 		return super.read();
 	}
 }
